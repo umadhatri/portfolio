@@ -19,26 +19,29 @@ const HeroTerminal = () => {
   ];
 
   useEffect(() => {
-    if (currentLineIndex < lines.length) {
-      const currentLine = lines[currentLineIndex];
-      let charIndex = 0;
-
-      const typingInterval = setInterval(() => {
-        if (charIndex < currentLine.length) {
-          setDisplayedText((prev) => prev + currentLine[charIndex]);
-          charIndex++;
-        } else {
-          clearInterval(typingInterval);
-          setDisplayedText((prev) => prev + "\n");
-          setCurrentLineIndex((prev) => prev + 1);
-        }
-      }, 30);
-
-      return () => clearInterval(typingInterval);
-    } else {
+    if (currentLineIndex >= lines.length) {
       setIsTypingComplete(true);
+      return;
     }
+
+    let charIndex = 0;
+    const line = lines[currentLineIndex];
+
+    const interval = setInterval(() => {
+      setDisplayedText((prev) => {
+        if (charIndex < line.length) {
+          return prev + line.charAt(charIndex++);
+        }
+        clearInterval(interval);
+        setDisplayedText((p) => p + "\n");
+        setCurrentLineIndex((i) => i + 1);
+        return prev;
+      });
+    }, 30);
+
+    return () => clearInterval(interval);
   }, [currentLineIndex]);
+
 
   useEffect(() => {
     if (isTypingComplete && inputRef.current) {
