@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Easter Egg for curious security professionals
+# Disallow: /flag{nice_try_recruiter}
+# Looking for hidden flags? Check the browser console and page source!
