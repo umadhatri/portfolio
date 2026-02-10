@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Testing
+coverage/
+
+# CRA build output (intermediate only)
+build/
+
+# OS files
+.DS_Store
