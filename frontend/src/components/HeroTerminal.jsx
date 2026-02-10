@@ -25,23 +25,28 @@ const HeroTerminal = () => {
       return;
     }
 
-    const line = lines[currentLineIndex];
+    const currentLine = lines[currentLineIndex];
     let charIndex = 0;
 
-    const interval = setInterval(() => {
-      if (charIndex < line.length) {
-        setCurrentLineText(prev => prev + line[charIndex]);
+    const typingInterval = setInterval(() => {
+      setDisplayedText((prev) => {
+        const nextChar = currentLine.slice(charIndex, charIndex + 1);
         charIndex++;
-      } else {
-        clearInterval(interval);
-        setTypedLines(prev => [...prev, line]);
-        setCurrentLineText("");
-        setCurrentLineIndex(prev => prev + 1);
-      }
+
+        if (!nextChar) {
+          clearInterval(typingInterval);
+          setDisplayedText((p) => p + "\n");
+          setCurrentLineIndex((i) => i + 1);
+          return p;
+        }
+
+        return prev + nextChar;
+      });
     }, 30);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(typingInterval);
   }, [currentLineIndex]);
+
 
 
 
