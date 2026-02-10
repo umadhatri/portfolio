@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Terminal } from "lucide-react";
 
 const HeroTerminal = () => {
-  const [displayedText, setDisplayedText] = useState("");
+  const [typedLines, setTypedLines] = useState([]);
+  const [currentLineText, setCurrentLineText] = useState("");
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [isTypingComplete, setIsTypingComplete] = useState(false);
   const [userInput, setUserInput] = useState("");
@@ -24,23 +25,24 @@ const HeroTerminal = () => {
       return;
     }
 
-    let charIndex = 0;
     const line = lines[currentLineIndex];
+    let charIndex = 0;
 
     const interval = setInterval(() => {
-      setDisplayedText((prev) => {
-        if (charIndex < line.length) {
-          return prev + line.charAt(charIndex++);
-        }
+      if (charIndex < line.length) {
+        setCurrentLineText(prev => prev + line[charIndex]);
+        charIndex++;
+      } else {
         clearInterval(interval);
-        setDisplayedText((p) => p + "\n");
-        setCurrentLineIndex((i) => i + 1);
-        return prev;
-      });
+        setTypedLines(prev => [...prev, line]);
+        setCurrentLineText("");
+        setCurrentLineIndex(prev => prev + 1);
+      }
     }, 30);
 
     return () => clearInterval(interval);
   }, [currentLineIndex]);
+
 
 
   useEffect(() => {
@@ -171,7 +173,13 @@ Executing mail client...`;
             onClick={() => inputRef.current?.focus()}
           >
             {/* Initial typing animation */}
-            <pre className="whitespace-pre-wrap text-[#E0E0E0]">{displayedText}</pre>
+            <pre className="whitespace-pre-wrap text-[#E0E0E0]">
+              {typedLines.map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+              {currentLineText}
+            </pre>
+
 
             {/* Command history */}
             {commandHistory.map((item, index) => (
