@@ -16,10 +16,10 @@ const config = {
 let setupDevServer;
 let babelMetadataPlugin;
 
-if (config.enableVisualEdits) {
-  setupDevServer = require("./plugins/visual-edits/dev-server-setup");
-  babelMetadataPlugin = require("./plugins/visual-edits/babel-metadata-plugin");
-}
+// if (config.enableVisualEdits) {
+//   setupDevServer = require("./plugins/visual-edits/dev-server-setup");
+//   babelMetadataPlugin = require("./plugins/visual-edits/babel-metadata-plugin");
+// }
 
 // Conditionally load health check modules only if enabled
 let WebpackHealthPlugin;
@@ -77,30 +77,33 @@ if (config.enableVisualEdits && babelMetadataPlugin) {
   };
 }
 
-webpackConfig.devServer = (devServerConfig) => {
-  // Apply visual edits dev server setup only if enabled
-  if (config.enableVisualEdits && setupDevServer) {
-    devServerConfig = setupDevServer(devServerConfig);
-  }
+// FIXED: Only add devServer config if we're actually in dev mode
+if (isDevServer) {
+  webpackConfig.devServer = (devServerConfig) => {
+    // Apply visual edits dev server setup only if enabled
+    if (config.enableVisualEdits && setupDevServer) {
+      devServerConfig = setupDevServer(devServerConfig);
+    }
 
-  // Add health check endpoints if enabled
-  if (config.enableHealthCheck && setupHealthEndpoints && healthPluginInstance) {
-    const originalSetupMiddlewares = devServerConfig.setupMiddlewares;
+    // Add health check endpoints if enabled
+    if (config.enableHealthCheck && setupHealthEndpoints && healthPluginInstance) {
+      const originalSetupMiddlewares = devServerConfig.setupMiddlewares;
 
-    devServerConfig.setupMiddlewares = (middlewares, devServer) => {
-      // Call original setup if exists
-      if (originalSetupMiddlewares) {
-        middlewares = originalSetupMiddlewares(middlewares, devServer);
-      }
+      devServerConfig.setupMiddlewares = (middlewares, devServer) => {
+        // Call original setup if exists
+        if (originalSetupMiddlewares) {
+          middlewares = originalSetupMiddlewares(middlewares, devServer);
+        }
 
-      // Setup health endpoints
-      setupHealthEndpoints(devServer, healthPluginInstance);
+        // Setup health endpoints
+        setupHealthEndpoints(devServer, healthPluginInstance);
 
-      return middlewares;
-    };
-  }
+        return middlewares;
+      };
+    }
 
-  return devServerConfig;
-};
+    return devServerConfig;
+  };
+}
 
 module.exports = webpackConfig;

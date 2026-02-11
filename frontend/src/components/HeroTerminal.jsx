@@ -1,73 +1,81 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Terminal } from "lucide-react";
 
-const HeroTerminal = () => {
-  const [typedLines, setTypedLines] = useState([]);
-  const [currentLineText, setCurrentLineText] = useState("");
-  const [currentLineIndex, setCurrentLineIndex] = useState(0);
+const LINES = [
+  "user@uma:~$ ./introduce_self.sh",
+  "> Hello, I'm Umadhatri.",
+  "> I architect secure cloud environments.",
+  "> Specialized in WAZUH SIEM, AWS, and CTF challenges.",
+  "> Type 'help' for available commands.",
+];
+
+const TYPE_SPEED_MS = 30;
+const LINE_PAUSE_MS = 250;
+
+export default function HeroTerminal() {
+  const [renderedLines, setRenderedLines] = useState([]);   // fully finished lines
+  const [currentText, setCurrentText] = useState("");       // currently typing line
+  const [lineIndex, setLineIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
   const [isTypingComplete, setIsTypingComplete] = useState(false);
+
   const [userInput, setUserInput] = useState("");
   const [commandHistory, setCommandHistory] = useState([]);
+
   const inputRef = useRef(null);
   const terminalRef = useRef(null);
 
-  const lines = [
-    "user@uma:~$ ./introduce_self.sh",
-    "> Hello, I'm Umadhatri.",
-    "> I architect secure cloud environments.",
-    "> Specialized in WAZUH SIEM, AWS, and CTF challenges.",
-    "> Type 'help' for available commands.",
-  ];
-
+  // --- Typewriter (safe: never reads beyond string length) ---
   useEffect(() => {
-    if (currentLineIndex >= lines.length) {
+    if (lineIndex >= LINES.length) {
       setIsTypingComplete(true);
       return;
     }
 
-    const currentLine = lines[currentLineIndex];
-    let charIndex = 0;
+    const line = LINES[lineIndex];
 
-    const typingInterval = setInterval(() => {
-      setDisplayedText((prev) => {
-        const nextChar = currentLine.slice(charIndex, charIndex + 1);
-        charIndex++;
+    // finished this line → move it into renderedLines, then next line
+    if (charIndex >= line.length) {
+      const t = setTimeout(() => {
+        setRenderedLines((prev) => [...prev, line]);
+        setCurrentText("");
+        setLineIndex((i) => i + 1);
+        setCharIndex(0);
+      }, LINE_PAUSE_MS);
 
-        if (!nextChar) {
-          clearInterval(typingInterval);
-          setDisplayedText((p) => p + "\n");
-          setCurrentLineIndex((i) => i + 1);
-          return p;
-        }
-
-        return prev + nextChar;
-      });
-    }, 30);
-
-    return () => clearInterval(typingInterval);
-  }, [currentLineIndex]);
-
-
-
-
-  useEffect(() => {
-    if (isTypingComplete && inputRef.current) {
-      inputRef.current.focus();
+      return () => clearTimeout(t);
     }
+
+    // type next char
+    const t = setTimeout(() => {
+      const nextChar = line.charAt(charIndex); // charAt NEVER returns undefined
+      setCurrentText((prev) => prev + nextChar);
+      setCharIndex((c) => c + 1);
+    }, TYPE_SPEED_MS);
+
+    return () => clearTimeout(t);
+  }, [lineIndex, charIndex]);
+
+  // focus input after typing
+  useEffect(() => {
+    if (isTypingComplete) inputRef.current?.focus();
   }, [isTypingComplete]);
 
+  // auto-scroll terminal
   useEffect(() => {
-    if (terminalRef.current) {
-      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-    }
-  }, [commandHistory]);
+    terminalRef.current?.scrollTo({
+      top: terminalRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [renderedLines, currentText, commandHistory]);
 
   const handleCommand = (e) => {
     e.preventDefault();
-    const command = userInput.trim().toLowerCase();
+    const command = userInput.trim();
+    const cmdLower = command.toLowerCase();
 
     let output = "";
-    switch (command) {
+    switch (cmdLower) {
       case "help":
         output = `Available commands:
   help           - Show this help message
@@ -76,6 +84,7 @@ const HeroTerminal = () => {
   clear          - Clear the terminal
   ./contact.sh   - Show contact information`;
         break;
+
       case "cat skills.txt":
         output = `Technical Skills:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -86,70 +95,56 @@ Security:
   • Anomaly Detection
   • Threat Detection
   • Vulnerability Assessment
-  
+
 Cloud & Infrastructure:
   • AWS Cloud Security
   • Terraform (IaC)
   • Linux/Ubuntu Administration
   • Virtual Machine Management
-  
+
 Development:
   • Python
   • Bash Scripting
   • Git
-  
+
 Specialties:
   • CTF (Web/Pwn)
   • RAG Systems`;
         break;
+
       case "whoami":
         output = `Umadhatri Durvasula
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Results-driven Cybersecurity Professional with 1+ years of 
-hands-on experience in vulnerability assessment, secure 
+Results-driven Cybersecurity Professional with 1+ years of
+hands-on experience in vulnerability assessment, secure
 system architecture, and cybersecurity operations.
 
-Electronics and Communications Engineering graduate with 
-specialized expertise in Ubuntu security monitoring, RAG 
-systems implementation, and CTF challenge design.
-
-Google-certified cybersecurity professional with proven 
-track record of:
-  • Improving system security metrics by 54%
-  • Reducing security failure cases by 91%
-
-Currently seeking SOC Analyst or Cybersecurity Engineer 
-roles to leverage technical skills in threat detection, 
-incident response, and secure infrastructure management.`;
+Currently seeking SOC Analyst / Cybersecurity Engineer roles.`;
         break;
+
       case "clear":
         setCommandHistory([]);
         setUserInput("");
         return;
+
       case "./contact.sh":
         output = `Contact Information:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Email:    umadhatridurvasula@gmail.com
 Phone:    +91 9100269265
 LinkedIn: linkedin.com/in/uma-dhatri/
-GitHub:   github.com/umadhatri
-
-Executing mail client...`;
-        setTimeout(() => {
-          window.location.href = "mailto:umadhatridurvasula@gmail.com";
-        }, 1000);
+GitHub:   github.com/umadhatri`;
         break;
+
       case "":
         setUserInput("");
         return;
+
       default:
         output = `bash: ${command}: command not found\nType 'help' for available commands.`;
     }
 
-    setCommandHistory((prev) => [
-      ...prev,
-      { command: userInput, output },
-    ]);
+    setCommandHistory((prev) => [...prev, { command, output }]);
     setUserInput("");
   };
 
@@ -157,49 +152,46 @@ Executing mail client...`;
     <section id="hero" className="min-h-screen flex items-center justify-center px-4 py-20">
       <div className="w-full max-w-4xl">
         <div className="bg-[#1E1E1E]/80 backdrop-blur-sm rounded-lg border border-[#00FF41]/30 shadow-2xl shadow-[#00FF41]/10 overflow-hidden">
-          {/* Terminal Header */}
+          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-[#0D0D0D] border-b border-[#00FF41]/20">
             <div className="flex space-x-2">
-              <div className="w-3 h-3 rounded-full bg-[#FF5F57]"></div>
-              <div className="w-3 h-3 rounded-full bg-[#FFBD2E]"></div>
-              <div className="w-3 h-3 rounded-full bg-[#28CA42]"></div>
+              <div className="w-3 h-3 rounded-full bg-[#FF5F57]" />
+              <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
+              <div className="w-3 h-3 rounded-full bg-[#28CA42]" />
             </div>
             <div className="flex items-center space-x-2 text-[#A0A0A0] text-sm font-mono">
               <Terminal size={16} />
               <span>uma@terminal</span>
             </div>
-            <div className="w-16"></div>
+            <div className="w-16" />
           </div>
 
-          {/* Terminal Content */}
+          {/* Body */}
           <div
             ref={terminalRef}
-            className="p-6 font-mono text-sm leading-relaxed h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#00FF41]/30 scrollbar-track-transparent"
+            className="p-6 font-mono text-sm leading-relaxed h-[500px] overflow-y-auto"
             onClick={() => inputRef.current?.focus()}
           >
-            {/* Initial typing animation */}
-            <pre className="whitespace-pre-wrap text-[#E0E0E0]">
-              {typedLines.map((line, i) => (
-                <div key={i}>{line}</div>
+            {/* typed intro */}
+            <div className="whitespace-pre-wrap text-[#E0E0E0]">
+              {renderedLines.map((l, i) => (
+                <div key={i}>{l}</div>
               ))}
-              {currentLineText}
-            </pre>
+              {lineIndex < LINES.length && <div>{currentText}</div>}
+            </div>
 
-
-            {/* Command history */}
-            {commandHistory.map((item, index) => (
-              <div key={index} className="mt-4">
+            {/* history */}
+            {commandHistory.map((item, idx) => (
+              <div key={idx} className="mt-4">
                 <div className="flex items-center space-x-2">
                   <span className="text-[#00FF41]">user@uma:~$</span>
                   <span className="text-[#E0E0E0]">{item.command}</span>
                 </div>
-                <pre className="whitespace-pre-wrap text-[#A0A0A0] mt-2 ml-4">
-                  {item.output}
-                </pre>
+                <pre className="whitespace-pre-wrap text-[#A0A0A0] mt-2 ml-4">{item.output}</pre>
               </div>
             ))}
 
-            {/* Input line */}
+            {/* prompt */}
             {isTypingComplete && (
               <form onSubmit={handleCommand} className="flex items-center space-x-2 mt-4">
                 <span className="text-[#00FF41]">user@uma:~$</span>
@@ -218,13 +210,12 @@ Executing mail client...`;
           </div>
         </div>
 
-        {/* Hint */}
         <p className="text-center text-[#A0A0A0] text-sm font-mono mt-4">
-          💡 Click the terminal and try typing: help, whoami, cat skills.txt
+          💡 Try: <span className="text-[#E0E0E0]">help</span>,{" "}
+          <span className="text-[#E0E0E0]">whoami</span>,{" "}
+          <span className="text-[#E0E0E0]">cat skills.txt</span>
         </p>
       </div>
     </section>
   );
-};
-
-export default HeroTerminal;
+}
